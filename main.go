@@ -3,5 +3,15 @@ package main
 import "fmt"
 
 func main(){
-    fmt.Print("Hello World!")
+    kana := map[string]string{
+        "a": "あ",
+        "i": "い",
+        "u": "う",
+        "e": "え",
+        "o": "お",
+    }
+
+    for key, value := range kana{
+        fmt.Println(key, ": ", value)
+    }
 }

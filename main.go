@@ -11,7 +11,7 @@ type Stats struct {
     WrongAnswer map[string]bool
 }
 
-func(stats Stats) StatsToString() string {
+func(stats Stats) PrintStats() string {
    return  fmt.Sprintf("\nAnswer: %d \nCorrect Answer: %d\n",
                         stats.Answer,stats.CorrectAnswer)
 }
@@ -22,7 +22,7 @@ const(
     Statistics
 )
 
-func randKey(kana map[string]string) string {
+func GetRandomKey(kana map[string]string) string {
     randKey := rand.Intn(len(kana))
     i := 0
     for key := range kana{
@@ -36,12 +36,28 @@ func randKey(kana map[string]string) string {
 
 func main(){
     var answer string
-    kana := map[string]string{
-        "a": "あ",
-        "i": "い",
-        "u": "う",
-        "e": "え",
-        "o": "お",
+    kana := map[string]map[string]string{
+        "a": {
+            "a": "あ",   
+            "i": "い",
+            "u": "う",
+            "e": "え",
+            "o": "お",
+        },
+        "ka": {
+            "ka": "か",
+            "ki": "き",
+            "ku": "く",
+            "ke": "け",
+            "ko": "こ",
+        },
+        "sa": {
+            "sa": "さ",
+            "shi": "し",
+            "su": "す",
+            "se": "せ",
+            "so": "そ",
+        },
     }
 
     stats := Stats{
@@ -50,19 +66,25 @@ func main(){
         WrongAnswer: make(map[string]bool),
     }
 
-    currentState := Main
+    currentState := Main    
+    gameKana := make(map[string]string)
 
-    fmt.Println("KANA-OO\n Press s for start!")
+    fmt.Println("KANA-OO")
     for{
         switch currentState{
             case Main:
-                fmt.Scan(&answer)
-                if( answer == "s"){
-                    currentState = Game
+//              fmt.Println("Select packs\nAvailable: a, ka, sa")
+                for _, value:= range kana{
+                        for k, v := range value{
+                            gameKana[k] = v
+                        }
                 }
+                currentState = Game
+                continue
+
             case Game:
-                key := randKey(kana)
-                fmt.Println("What this kana: ", kana[key], "?")
+                key := GetRandomKey(gameKana)
+                fmt.Println("What this kana: ", gameKana[key], "?")
                 fmt.Scan(&answer)
                 if(answer == "exit"){
                     currentState = Statistics
@@ -78,14 +100,17 @@ func main(){
                 }
 
                 stats.Answer++
-                fmt.Println(stats.StatsToString())
+                fmt.Println(stats.PrintStats())
+
             case Statistics:
                 fmt.Print("Wrong kana:\n")
                 for key:= range stats.WrongAnswer{
-                    fmt.Println(key, " ", kana[key])
+                    fmt.Println(key, " ", gameKana[key])
                 }
+
                 fmt.Println("New Game: n\nExit: exit")
                 fmt.Scan(&answer)
+
                 if(answer == "n"){
                     stats.Answer = 0
                     stats.CorrectAnswer = 0

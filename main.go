@@ -9,21 +9,57 @@ import (
 )
 
 type Stats struct {
-    Answers int
-    CorrectAnswers int
-    WrongKanas Row
+    answers int
+    correctAnswers int
+    wrongKanas map[string]string
+}
+
+func (s *Stats) InceaseCorrectAnswer() {
+    s.correctAnswers ++
+}
+
+func (s *Stats) InceaseAnswer () {
+    s.answers ++
+}
+
+func (s *Stats) AddWrongKana(key string, value string) {
+    s.wrongKanas[key] = value
+}
+
+func(s *Stats) DeleteWrongKana(key string) {
+    delete(s.wrongKanas, key)
+}
+
+func(s Stats) GetLenghthWrongKanas() int{
+    return len(s.wrongKanas)
+}
+
+func (s Stats) GetWrongKanas() map[string]string {
+    return s.wrongKanas
+}
+
+func (s Stats) MakeGameDictFromWrongKanas()  GameDict {
+    gameDict := GameDict{
+        kanas: make(map[string]string),
+    }
+
+    for key, value := range s.wrongKanas{
+        gameDict.kanas[key] = value
+    }
+
+    return gameDict
 }
 
 func (stats Stats) PrintStats() {
         fmt.Printf("\nCorrect: %d/%d\n",
-        stats.CorrectAnswers, stats.Answers)
+        stats.correctAnswers, stats.answers)
 }
 
-func NewStats(answers int, correctAnswers int, wrongKanas Row) Stats {
+func NewStats(answers int, correctAnswers int, wrongKanas map[string]string) Stats {
     return Stats{
-        Answers: answers,
-        CorrectAnswers: correctAnswers,
-        WrongKanas: wrongKanas,
+        answers: answers,
+        correctAnswers: correctAnswers,
+        wrongKanas: wrongKanas,
     }
 }
 
@@ -62,7 +98,7 @@ func (gameDict GameDict) PopRandomKana() (string, string) {
     i := 0
 
     for key, value := range gameDict.kanas{
-        if (i == randKey){
+        if (i == randKey) {
             defer delete(gameDict.kanas, key)
             return key, value
         }
@@ -126,6 +162,17 @@ func (dict Dictionary) MakeGameDictWithSelected(packs []string) GameDict {
     return gameDict
 }
 
+func (dict Dictionary) GetRows () string {
+    var bilder strings.Builder
+
+    for key := range dict.row {
+        bilder.WriteString(key)
+        bilder.WriteString(", ")
+    }
+    result := bilder.String()
+    return result
+}
+
 const(
     Menu = iota
     Game
@@ -161,7 +208,7 @@ func main(){
         },
     })
 
-    stats := NewStats(0,0, NewRow(make(map[string]string)))
+    stats := NewStats(0,0, make(map[string]string))
     currentState := Menu
 
     fmt.Printf("KANA-GO\n")
@@ -172,16 +219,12 @@ func main(){
     for{
         switch currentState{
             case Menu:
-                fmt.Printf("Select packs: all, a, ka, sa\n")
+                fmt.Printf("Select packs: all, %s\n", dictionary.GetRows())
                 input, _ = reader.ReadString('\n')
                 input = strings.TrimSpace(input)
 
-                if(input == "all") {
-                    gameDict = dictionary.MakeGameDict()
-                } else {
-                    args := strings.Split(input, " ")
-                     gameDict = dictionary.MakeGameDictWithSelected(args)
-                }
+                args := strings.Split(input, " ")
+                gameDict = dictionary.MakeGameDictWithSelected(args)
 
                 currentState = Game
 
@@ -203,22 +246,22 @@ func main(){
                 }
 
                if(input == key){
-                    stats.CorrectAnswers++
-                    delete(stats.WrongKanas.kanas, key)
+                    stats.InceaseCorrectAnswer()
+                    stats.DeleteWrongKana(key)
                 } else {
                 fmt.Println("no, it's a: ", key)
-                    stats.WrongKanas.kanas[key] = value
+                    stats.AddWrongKana(key, value)
                 }
 
-                stats.Answers++
+                stats.InceaseAnswer()
                 stats.PrintStats()
 
             case Statistics:
                 fmt.Printf("\nThe game is over. Your stats: ")
                 stats.PrintStats()
-                if( len(stats.WrongKanas.kanas) > 0) {
+                if( stats.GetLenghthWrongKanas() > 0) {
                     fmt.Printf("Wrong kana:\n")
-                    for key, value := range stats.WrongKanas.kanas{
+                    for key, value := range stats.GetWrongKanas(){
                         fmt.Printf("  %s (%s)\n", value, key)
                     }
                 }
@@ -229,14 +272,14 @@ func main(){
                 input = strings.TrimSpace(input)
 
                 if(input == "n"){
-                    if(len(stats.WrongKanas.kanas) > 0) {
+                    if(stats.GetLenghthWrongKanas()> 0) {
                         fmt.Printf("First, correct the errors\n")
-                        stats = NewStats(0,0,stats.WrongKanas)
-                        stats.WrongKanas.AppendKanasTo(gameDict.kanas)
+                        stats = NewStats(0,0,stats.GetWrongKanas())
+                        gameDict = stats.MakeGameDictFromWrongKanas()
                         currentState = Game
                         continue
                     }
-                    stats = NewStats(0,0,NewRow(make(map[string]string)))
+                    stats = NewStats(0,0,make(map[string]string))
                     currentState = Menu
                 } else if (input == "exit"){
                     return
